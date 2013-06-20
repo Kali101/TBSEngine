@@ -1,15 +1,13 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using GoodStuff.NaturalLanguage;
+using System.Linq;
 
 public class Map : MonoBehaviour {
 
-	// Use this for initialization
 	void Start () {
 	
 	}
 	
-	// Update is called once per frame
-	void Update () {
-	
-	}
 }
