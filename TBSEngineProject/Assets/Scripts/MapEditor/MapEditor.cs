@@ -88,7 +88,7 @@ public class MapEditor : MonoBehaviour {
 	void PositionTile(GameObject tileObj) {
 		var tile = tileObj.GetComponent<Tile>();
 		tileObj.transform.localScale = new Vector3(tileWidth, 1.0f, tileHeight);
-		tileObj.transform.position = new Vector3(tileObj.transform.parent.position.x + (tileWidth*tile.j) - (0.5f*columns*tileWidth), tileObj.transform.parent.position.y + (tileWidth*tile.i) - (0.5f*rows*tileHeight), tileObj.transform.position.z);
+		tileObj.transform.position = new Vector3(tileObj.transform.parent.position.x + (tileWidth*tile.j) - (0.5f*columns*tileWidth), tileObj.transform.parent.position.y + (tileHeight*tile.i) - (0.5f*rows*tileHeight), tileObj.transform.position.z);
 	}
 	
 	void OnGUI() {
