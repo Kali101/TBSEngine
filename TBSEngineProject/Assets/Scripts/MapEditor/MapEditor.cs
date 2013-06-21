@@ -56,7 +56,10 @@ public class MapEditor : MonoBehaviour {
 		0.UpTo(rows-1, i => {
 			var newRow = new List<GameObject>();
 			0.UpTo(columns-1, j => {
-				if(mapTiles.Count > i && mapTiles[i].Count > j) newRow.Add(mapTiles[i][j]);
+				if(mapTiles.Count > i && mapTiles[i].Count > j) { 
+					newRow.Add(mapTiles[i][j]);
+					PositionTile(mapTiles[i][j]);
+				}
 				else newRow.Add(CreateNewTile(i, j));				
 			});
 			
@@ -75,7 +78,17 @@ public class MapEditor : MonoBehaviour {
 		var newTile = GameObject.Instantiate(tilePrefab) as GameObject;
 		newTile.transform.parent = this.transform;
 		newTile.name = string.Format("[{0}][{1}]", i, j);
+		var tile = newTile.GetComponent<Tile>();
+		tile.i = i;
+		tile.j = j;
+		PositionTile(newTile);
 		return newTile;
+	}
+	
+	void PositionTile(GameObject tileObj) {
+		var tile = tileObj.GetComponent<Tile>();
+		tileObj.transform.localScale = new Vector3(tileWidth, 1.0f, tileHeight);
+		tileObj.transform.position = new Vector3(tileObj.transform.parent.position.x + (tileWidth*tile.j) - (0.5f*columns*tileWidth), tileObj.transform.parent.position.y + (tileWidth*tile.i) - (0.5f*rows*tileHeight), tileObj.transform.position.z);
 	}
 	
 	void OnGUI() {
