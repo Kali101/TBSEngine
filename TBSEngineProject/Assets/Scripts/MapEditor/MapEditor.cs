@@ -5,7 +5,36 @@ using GoodStuff.NaturalLanguage;
 using System.Linq;
 using System.IO;
 
-[System.Serializable]
+public class MapEditorWindow {
+	public enum WindowType {
+		Properties,
+		Palette,
+	}
+	public WindowType Type { get; set; }
+	public Rect Coords { get; set; }
+	public bool Showing { get; set; }
+	public string WindowTitle { get; set; }
+	public string ButtonName { get; set; }
+	public GUI.WindowFunction RenderFunction;
+	
+	public MapEditorWindow(WindowType type, Rect coords, GUI.WindowFunction renderFunction) {
+		MapEditorWindow(type, coords, renderFunction, type.ToString(), type.ToString());
+	}
+	
+	public MapEditorWindow(WindowType type, Rect coords, GUI.WindowFunction renderFunction, string displayName) {
+		MapEditorWindow(type, coords, renderFunction, displayName, displayName);
+	}
+	
+	public MapEditorWindow(WindowType type, Rect coords, GUI.WindowFunction renderFunction, string windowTitle, string buttonName) {
+		Type = type;
+		Coords = coords;
+		Showing = false;
+		RenderFunction = renderFunction;
+		WindowTitle = windowTitle;
+		ButtonName = buttonName;
+	}
+}
+
 public class ConfigurableMapValue {
 	public string Id { get; set; }
 	public string DisplayName { get; set; }
@@ -21,94 +50,49 @@ public class ConfigurableMapValue {
 
 public class MapEditor : MonoBehaviour {
 	public string defaultTilesetName = "";
-	GameObject defaultTilesetPrefab;
-	GameObject selectedTilesetPrefab;
+	public GameObject DefaultTilesetPrefab {get; set;}
+	public GameObject SelectedTilesetPrefab {get; set;}
 	
-	string mapName = "Untitled";
-	int rows = 1;
-	int columns = 1;
-	int tileWidth = 20;
-	int tileHeight = 20;
+	Map map;
 	
+	List<MapEditorWindow> windows = new List<MapEditorWindow>();
 	List<ConfigurableMapValue> configurableMapValues = new List<ConfigurableMapValue>();
 	
-	public GameObject tilePrefab;
-	List<List<GameObject>> mapTiles = new List<List<GameObject>>();
-	bool dirty;
-	
-	Rect configurationWindowCoords = new Rect(0, 0, 104, 200);
-	
 	void Awake() {
-		configurableMapValues.Add(new ConfigurableMapValue("name", "Name:", mapName));
-		configurableMapValues.Add(new ConfigurableMapValue("rows", "Rows:", rows.ToString()));
-		configurableMapValues.Add(new ConfigurableMapValue("columns", "Columns:", columns.ToString()));
-		configurableMapValues.Add(new ConfigurableMapValue("tileWidth", "Tile Width:", tileWidth.ToString()));
-		configurableMapValues.Add(new ConfigurableMapValue("tileHeight", "Tile Height:", tileHeight.ToString()));
+		map = transform.GetComponent<Map>();
+		
+		configurableMapValues.Add(new ConfigurableMapValue("name", "Name:", map.MapName));
+		configurableMapValues.Add(new ConfigurableMapValue("rows", "Rows:", map.Rows.ToString()));
+		configurableMapValues.Add(new ConfigurableMapValue("columns", "Columns:", map.Columns.ToString()));
+		configurableMapValues.Add(new ConfigurableMapValue("tileWidth", "Tile Width:", map.TileWidth.ToString()));
+		configurableMapValues.Add(new ConfigurableMapValue("tileHeight", "Tile Height:", map.TileHeight.ToString()));
+		
+		windows.Add(new MapEditorWindow(MapEditorWindow.WindowType.Properties, new Rect(0, 0, 104, 200), DrawPropertyWindow));
+		windows.Add(new MapEditorWindow(MapEditorWindow.WindowType.Palette, new Rect(0, 200, 300, 300), DrawPaletteWindow));
 		
 		if(string.IsNullOrEmpty(defaultTilesetName)) defaultTilesetName = Directory.GetFiles(string.Format("{0}/Assets/Resources/Tilesets/", Directory.GetCurrentDirectory()))[0];
 		defaultTilesetName = defaultTilesetName.Split(Path.DirectorySeparatorChar).Last().Replace(".prefab", "");
-		Debug.Log(defaultTilesetName);
 		selectedTilesetPrefab = defaultTilesetPrefab = Resources.Load(string.Format("Tilesets/{0}", defaultTilesetName)) as GameObject;
 		
-		dirty = true;
-	}
-	
-	void Update() {
-		if(dirty) {
-			RegenerateMap();
-			dirty = false;
-		}
-	}
-	
-	void RegenerateMap() {
-		Debug.Log("Generating map "+rows+" "+columns);
-		var currentMapTiles = new List<List<GameObject>>();
-		0.UpTo(rows-1, i => {
-			var newRow = new List<GameObject>();
-			0.UpTo(columns-1, j => {
-				if(mapTiles.Count > i && mapTiles[i].Count > j) { 
-					newRow.Add(mapTiles[i][j]);
-					PositionTile(mapTiles[i][j]);
-				}
-				else newRow.Add(CreateNewTile(i, j));				
-			});
-			
-			currentMapTiles.Add(newRow);
-		});
-		mapTiles.EachWithIndex((mapRow, i) => {
-			mapRow.EachWithIndex((mapTile, j) => {
-				if(j >= columns) GameObject.Destroy(mapTile);
-			});					
-			if(i >= rows) mapRow.Each(mapTile => GameObject.Destroy(mapTile));
-		});
-		mapTiles = currentMapTiles;
-	}
-	
-	GameObject CreateNewTile(int i, int j) {
-		var newTile = GameObject.Instantiate(tilePrefab) as GameObject;
-		newTile.transform.parent = this.transform;
-		newTile.name = string.Format("[{0}][{1}]", i, j);
-		var tile = newTile.GetComponent<Tile>();
-		tile.i = i;
-		tile.j = j;
-		var tilesetInfo = defaultTilesetPrefab.GetComponent<Tileset>();
-		newTile.renderer.material.mainTexture = tilesetInfo.tilemapImage;
-		newTile.renderer.material.SetTextureScale("_MainTex", new Vector2(1.0f/tilesetInfo.rows, 1.0f/tilesetInfo.columns));
-		PositionTile(newTile);
-		return newTile;
-	}
-	
-	void PositionTile(GameObject tileObj) {
-		var tile = tileObj.GetComponent<Tile>();
-		tileObj.transform.localScale = new Vector3(tileWidth, 1.0f, tileHeight);
-		tileObj.transform.position = new Vector3(tileObj.transform.parent.position.x + (tileWidth*tile.j) - (0.5f*columns*tileWidth), tileObj.transform.parent.position.y + (tileHeight*tile.i) - (0.5f*rows*tileHeight), tileObj.transform.position.z);
+		map.Dirty = true;
 	}
 	
 	void OnGUI() {
-		configurationWindowCoords = GUILayout.Window(0, configurationWindowCoords, DrawConfigurationWindow, "Configure Map");
+		windows.EachWithIndex((window, i) => {
+			if(GUILayout.Button(window.ButtonName)) {
+				window.Showing = !window.Showing;
+			}
+			
+			if(window.Showing) {
+				window.Coords = GUILayout.Window(i, window.Coords, window.RenderFunction(i), window.WindowTitle);
+			}
+		});
 	}
 	
-	void DrawConfigurationWindow(int id) {
+	public void DrawPalleteWindow(int id) {
+	}
+	
+	public void DrawPropertyWindow(int id) {
 		configurableMapValues.Each(mapValue => {
 			GUILayout.Label(mapValue.DisplayName);
 			mapValue.InputValue = GUILayout.TextField(mapValue.InputValue);
@@ -116,19 +100,19 @@ public class MapEditor : MonoBehaviour {
 				mapValue.InputPreviousValue = mapValue.InputValue;
 				switch(mapValue.Id) {
 				case "rows":
-					SetInt(out rows, mapValue.InputValue);
+					SetInt(out map.Rows, mapValue.InputValue);
 					break;
 				case "columns":
-					SetInt(out columns, mapValue.InputValue);
+					SetInt(out map.Columns, mapValue.InputValue);
 					break;
 				case "tileWidth":
-					SetInt(out tileWidth, mapValue.InputValue);
+					SetInt(out map.TileWidth, mapValue.InputValue);
 					break;
 				case "tileHeight":
-					SetInt(out tileHeight, mapValue.InputValue);
+					SetInt(out map.TileHeight, mapValue.InputValue);
 					break;
 				case "name":
-					mapName = mapValue.InputValue;
+					map.MapName = mapValue.InputValue;
 					break;
 				}
 			}
@@ -140,6 +124,6 @@ public class MapEditor : MonoBehaviour {
 		if(!int.TryParse(val, out field)) {
 			field = 0;
 		}
-		dirty = true;
+		map.Dirty = true;
 	}
 }
