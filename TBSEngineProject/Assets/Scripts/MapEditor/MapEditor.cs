@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using GoodStuff.NaturalLanguage;
 using System.Linq;
+using System.IO;
 
 [System.Serializable]
 public class ConfigurableMapValue {
@@ -19,13 +20,17 @@ public class ConfigurableMapValue {
 }
 
 public class MapEditor : MonoBehaviour {
+	public string defaultTilesetName = "";
+	GameObject defaultTilesetPrefab;
+	GameObject selectedTilesetPrefab;
+	
 	string mapName = "Untitled";
 	int rows = 1;
 	int columns = 1;
 	int tileWidth = 20;
 	int tileHeight = 20;
 	
-	public List<ConfigurableMapValue> configurableMapValues = new List<ConfigurableMapValue>();
+	List<ConfigurableMapValue> configurableMapValues = new List<ConfigurableMapValue>();
 	
 	public GameObject tilePrefab;
 	List<List<GameObject>> mapTiles = new List<List<GameObject>>();
@@ -39,6 +44,11 @@ public class MapEditor : MonoBehaviour {
 		configurableMapValues.Add(new ConfigurableMapValue("columns", "Columns:", columns.ToString()));
 		configurableMapValues.Add(new ConfigurableMapValue("tileWidth", "Tile Width:", tileWidth.ToString()));
 		configurableMapValues.Add(new ConfigurableMapValue("tileHeight", "Tile Height:", tileHeight.ToString()));
+		
+		if(string.IsNullOrEmpty(defaultTilesetName)) defaultTilesetName = Directory.GetFiles(string.Format("{0}/Assets/Resources/Tilesets/", Directory.GetCurrentDirectory()))[0];
+		defaultTilesetName = defaultTilesetName.Split(Path.DirectorySeparatorChar).Last().Replace(".prefab", "");
+		Debug.Log(defaultTilesetName);
+		selectedTilesetPrefab = defaultTilesetPrefab = Resources.Load(string.Format("Tilesets/{0}", defaultTilesetName)) as GameObject;
 		
 		dirty = true;
 	}
@@ -81,6 +91,9 @@ public class MapEditor : MonoBehaviour {
 		var tile = newTile.GetComponent<Tile>();
 		tile.i = i;
 		tile.j = j;
+		var tilesetInfo = defaultTilesetPrefab.GetComponent<Tileset>();
+		newTile.renderer.material.mainTexture = tilesetInfo.tilemapImage;
+		newTile.renderer.material.SetTextureScale("_MainTex", new Vector2(1.0f/tilesetInfo.rows, 1.0f/tilesetInfo.columns));
 		PositionTile(newTile);
 		return newTile;
 	}
