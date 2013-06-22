@@ -16,11 +16,11 @@ public class Map : MonoBehaviour {
 	
 	public bool Dirty { get; set; } 
 	
-	MapEditor editor;
+	//MapEditor editor;
 	
-	void Awake() {
-		editor = GetComponent<MapEditor>();
-	}
+//	void Awake() {
+//		editor = GetComponent<MapEditor>();
+//	}
 	
 	void Update() {
 		if(Dirty) {
@@ -60,10 +60,10 @@ public class Map : MonoBehaviour {
 		var tile = newTile.GetComponent<Tile>();
 		tile.i = i;
 		tile.j = j;
-		var tilesetInfo = editor.DefaultTilesetPrefab.GetComponent<Tileset>();
-		newTile.renderer.material.mainTexture = tilesetInfo.tilemapImage;
-		newTile.renderer.material.SetTextureScale("_MainTex", new Vector2(1.0f/tilesetInfo.columns, 1.0f/tilesetInfo.rows));
-		PositionTile(newTile);
+//		var tilesetInfo = editor.DefaultTilesetPrefab.GetComponent<Tileset>();
+//		newTile.renderer.material.mainTexture = tilesetInfo.tilemapImage;
+//		newTile.renderer.material.SetTextureScale("_MainTex", new Vector2(1.0f/tilesetInfo.columns, 1.0f/tilesetInfo.rows));
+//		PositionTile(newTile);
 		return newTile;
 	}
 	
