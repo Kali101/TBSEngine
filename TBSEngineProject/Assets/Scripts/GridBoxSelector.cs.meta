@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: fca4336aaedbb4b8982df7f04415298e
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - SelectionBoxPrefab: {fileID: 100000, guid: 7f9bae3af31b74abeba446dbdafbb394, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

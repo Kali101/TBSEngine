@@ -5,8 +5,7 @@ using GoodStuff.NaturalLanguage;
 using System.Linq;
 
 public class Map : MonoBehaviour {
-	public GameObject tilePrefab;
-	List<List<GameObject>> mapTiles = new List<List<GameObject>>();
+	List<List<TileInfo>> mapTiles = new List<List<TileInfo>>();
 	
 	public string MapName { get; set; }
 	public int Rows { get; set; }
@@ -16,10 +15,21 @@ public class Map : MonoBehaviour {
 	
 	public bool Dirty { get; set; } 
 	
-	MapEditor editor;
+	public MapEditor editor;
 	
 	void Awake() {
-		editor = GetComponent<MapEditor>();
+		MapName = "Untitled";
+		Rows = 3;
+		Columns = 3;
+		TileWidth = 20;
+		TileHeight = 20;
+		
+		Dirty = true;
+		EventRouter.Subscribe("Map", GameEvent.Input.GridClicked, OnMapClicked);
+	}
+	
+	void OnMapClicked(EventRouter.Event evt) {
+		PaintTile(evt.GetData<int>(0), evt.GetData<int>(1));
 	}
 	
 	void Update() {
@@ -30,47 +40,44 @@ public class Map : MonoBehaviour {
 	}
 	
 	void RegenerateMap() {
-		Debug.Log("Generating map "+Rows+" "+Columns);
-		var currentMapTiles = new List<List<GameObject>>();
+		var newMapWidth = Columns*TileWidth;
+		var newMapHeight = Rows*TileHeight;
+		transform.localScale = new Vector3(newMapWidth, 1, newMapHeight);
+		
+		renderer.material.mainTexture = new Texture2D(newMapWidth, newMapHeight); 
+		
+		var currentMapTiles = new List<List<TileInfo>>();
 		0.UpTo(Rows-1, i => {
-			var newRow = new List<GameObject>();
+			var newRow = new List<TileInfo>();
 			0.UpTo(Columns-1, j => {
 				if(mapTiles.Count > i && mapTiles[i].Count > j) { 
 					newRow.Add(mapTiles[i][j]);
-					PositionTile(mapTiles[i][j]);
+					PaintTile(i, j);
 				}
 				else newRow.Add(CreateNewTile(i, j));				
 			});
 			
 			currentMapTiles.Add(newRow);
 		});
-		mapTiles.EachWithIndex((mapRow, i) => {
-			mapRow.EachWithIndex((mapTile, j) => {
-				if(j >= Columns) GameObject.Destroy(mapTile);
-			});					
-			if(i >= Rows) mapRow.Each(mapTile => GameObject.Destroy(mapTile));
-		});
 		mapTiles = currentMapTiles;
+		
+		transform.GetComponent<GridBoxSelector>().Rows = Rows;
+		transform.GetComponent<GridBoxSelector>().Columns = Columns;
 	}
 	
-	GameObject CreateNewTile(int i, int j) {
-		var newTile = GameObject.Instantiate(tilePrefab) as GameObject;
-		newTile.transform.parent = this.transform;
-		newTile.name = string.Format("[{0}][{1}]", i, j);
-		var tile = newTile.GetComponent<Tile>();
-		tile.i = i;
-		tile.j = j;
-		var tilesetInfo = editor.DefaultTilesetPrefab.GetComponent<Tileset>();
-		newTile.renderer.material.mainTexture = tilesetInfo.tilemapImage;
-		newTile.renderer.material.SetTextureScale("_MainTex", new Vector2(1.0f/tilesetInfo.columns, 1.0f/tilesetInfo.rows));
-		PositionTile(newTile);
-		return newTile;
+	TileInfo CreateNewTile(int i, int j) {
+		PaintTile(i, j);		
+		return new TileInfo(i, j, editor.SelectedTileset.tilemapName, editor.SelectedTilesetXOffset, editor.SelectedTilesetYOffset);
 	}
 	
-	void PositionTile(GameObject tileObj) {
-		var tile = tileObj.GetComponent<Tile>();
-		tileObj.transform.localScale = new Vector3(TileWidth, 1.0f, TileHeight);
-		tileObj.transform.position = new Vector3(tileObj.transform.parent.position.x + (TileWidth*tile.j) - (0.5f*Columns*TileWidth), tileObj.transform.parent.position.y + (TileHeight*tile.i) - (0.5f*Rows*TileHeight), tileObj.transform.position.z);
+	void PaintTile(int i, int j) {
+		Debug.Log (editor.SelectedTilesetXOffset+" "+editor.SelectedTilesetYOffset);
+		var tilesetPixels = editor.SelectedTileset.tilemapImage.GetPixels(editor.SelectedTilesetXOffset, editor.SelectedTilesetYOffset, TileWidth, TileHeight);
+
+		var mainTex = transform.renderer.material.GetTexture("_MainTex") as Texture2D;
+		mainTex.SetPixels(i*TileWidth, j*TileHeight, TileWidth, TileHeight, tilesetPixels);
+		mainTex.Apply();
+		renderer.material.SetTexture("_MainTex", mainTex);
+		
 	}
-	
 }
