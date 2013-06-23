@@ -61,8 +61,8 @@ public class Map : MonoBehaviour {
 		});
 		mapTiles = currentMapTiles;
 		
-		transform.GetComponent<GridBoxSelector>().Rows = Rows;
-		transform.GetComponent<GridBoxSelector>().Columns = Columns;
+		transform.GetComponent<GridBoxSelector>().TileWidth = TileWidth;
+		transform.GetComponent<GridBoxSelector>().TileHeight = TileHeight;
 	}
 	
 	TileInfo CreateNewTile(int i, int j) {

@@ -90,10 +90,24 @@ public class MapEditor : MonoBehaviour {
 		SelectedTileset = (Resources.Load(string.Format("Tilesets/{0}", selectedTilesetName)) as GameObject).GetComponent<Tileset>();		
 		var gridBox = tilesetDisplay.GetComponent<GridBoxSelector>();
 		if(gridBox == null) gridBox = tilesetDisplay.AddComponent<GridBoxSelector>();
-		gridBox.Rows = SelectedTileset.tilemapImage.height / map.TileHeight;
-		gridBox.Columns = SelectedTileset.tilemapImage.width / map.TileWidth;
+		gridBox.TileWidth = map.TileWidth;
+		gridBox.TileHeight = map.TileHeight;
 		
 		gridBox.GridXSelected = gridBox.GridYSelected = 0;
+		
+		tilesetDisplay.renderer.material.mainTexture = SelectedTileset.tilemapImage;
+		var gridTexture = new Texture2D(SelectedTileset.tilemapImage.width, SelectedTileset.tilemapImage.height);
+		0.UpTo(gridTexture.width, i => {
+			0.UpTo(gridTexture.height, j => {
+				if(i % map.TileWidth == 0 || j % map.TileWidth == 0) {
+					gridTexture.SetPixel(i, j, Color.black);
+				} else {
+					gridTexture.SetPixel(i, j, Color.clear);
+				}
+			});
+		});
+		gridTexture.Apply();
+		tilesetDisplay.transform.FindChild("GridOverlay").renderer.material.mainTexture = gridTexture;
 	}
 	
 	void OnGUI() {

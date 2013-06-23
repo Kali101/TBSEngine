@@ -3,21 +3,23 @@ using System.Collections;
 using GoodStuff.NaturalLanguage;
 
 public class GridBoxSelector : MonoBehaviour {
-	public int Rows {
+	public int TileWidth {
 		get {
-			return rows;
+			return tileWidth;
 		}
 		set {
-			rows = value;
+			tileWidth = value;
+			columns = renderer.material.mainTexture.width / tileWidth;
 			ResizeSelectionBox();
 		}
 	}
-	public int Columns {
+	public int TileHeight {
 		get {
-			return columns;
+			return tileHeight;
 		}
 		set {
-			columns = value;
+			tileHeight = value;
+			rows = renderer.material.mainTexture.height / tileHeight;
 			ResizeSelectionBox();
 		}
 	}
@@ -34,6 +36,8 @@ public class GridBoxSelector : MonoBehaviour {
 	
 	GameObject selectionBox;
 	
+	int tileWidth = -1;
+	int tileHeight = -1;
 	int rows = -1;
 	int columns = -1;
 	
@@ -50,7 +54,7 @@ public class GridBoxSelector : MonoBehaviour {
 	
 	void ResizeSelectionBox() {
 		if(selectionBox == null) CreateSelectionBox();
-		selectionBox.transform.localScale = new Vector3(1.0f / Columns, selectionBox.transform.localScale.y, 1.0f / Rows);
+		selectionBox.transform.localScale = new Vector3(1.0f / TileWidth, selectionBox.transform.localScale.y, 1.0f / TileHeight);
 	}
 	
 	void OnMouseExit() {
@@ -64,20 +68,21 @@ public class GridBoxSelector : MonoBehaviour {
 	void OnMouseOver() {
 		RaycastHit hit;
         Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit);
-		GridXHover = Mathf.FloorToInt(hit.textureCoord.x * Columns);
-		GridYHover = Mathf.FloorToInt(hit.textureCoord.y * Rows);
 		
-		var newX = (float)GridXHover.MapToRange(0, Columns, collider.bounds.min.x, collider.bounds.max.x) + selectionBox.renderer.bounds.extents.x;
-		var newZ = (float)GridYHover.MapToRange(0, Rows, collider.bounds.min.z, collider.bounds.max.z) + selectionBox.renderer.bounds.extents.z;
+		GridXHover = Mathf.FloorToInt(hit.textureCoord.x * columns);
+		GridYHover = Mathf.FloorToInt(hit.textureCoord.y * rows);
+		
+		var newX = (float)GridXHover.MapToRange(0, columns, collider.bounds.min.x, collider.bounds.max.x) + selectionBox.renderer.bounds.extents.x;
+		var newZ = (float)GridYHover.MapToRange(0, rows, collider.bounds.min.z, collider.bounds.max.z) + selectionBox.renderer.bounds.extents.z;
 		selectionBox.transform.position = new Vector3(newX, transform.position.y + 0.1f, newZ);
 	}
 	
 	void OnMouseDown() {
-		if(Rows < 0 || Columns < 0) { 
+		if(TileWidth < 0 || TileHeight < 0) { 
 			Debug.LogError(string.Format("ERROR: Grid on {0} has been clicked before row or column properties are set.", gameObject.name));
 			return;
 		}
-		
+	
 		GridXSelected = GridXHover;
 		GridYSelected = GridYHover;
 		
